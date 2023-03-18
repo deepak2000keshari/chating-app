@@ -32,7 +32,7 @@
                 session_start();
                 $_SESSION['id']=$row['id'];
                 $_SESSION['email']=$signin_email;
-                $_SESSION['username']=$row['user_name'];
+                $_SESSION['username']=ucwords($row['user_name']);
                 $_SESSION['Phone']=$row['phone'];
                 $_SESSION['dob']=$row['dob'];
                 if($row['profile']=='')

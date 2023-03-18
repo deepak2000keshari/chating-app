@@ -1,7 +1,4 @@
 <?php 
-
-    require_once('conection.php');
-
     $user='root';
     $pass='';
     $servername='localhost';
