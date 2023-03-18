@@ -1,4 +1,8 @@
-<?php include('css.php');?>
+<?php include('css.php');
+session_start();
+if(isset($_SESSION['username'])){ header('Location: massage.php'); }
+?>
+<body class="bg-light">
 <form action='javascript:void(0)' onsubmit="signin()">
 <div class="container">
     <div class="row align-items-center justify-content-center min-vh-100 gx-0">
@@ -36,11 +40,11 @@
 
             <!-- Text -->
             <div class="text-center mt-8">
-                <p>Don't have an account yet? <a href="signup.html">Sign up</a></p>
+                <p>Don't have an account yet? <a href="signup.php">Sign up</a></p>
                 <p><a href="password-reset.html">Forgot Password?</a></p>
             </div>
         </div>
     </div> <!-- / .row -->
 </div>
 </form>
-<?php include('footer.php');?>
+<?php include('footer.php')?>

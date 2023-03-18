@@ -1,4 +1,5 @@
-       <!-- Scripts -->
+     
+     <!-- Scripts -->
        <script src="assets/js/vendor.js"></script>
        <script src="assets/js/template.js"></script>
        </body>
@@ -48,5 +49,16 @@
                     }                 
                 });
           }
+          $('#logout').click(function()
+          {
+            $.get("logout.php", {
+                },
+                function(data) {
+                    if(data==1)
+                    {
+                        window.location.href = 'signin.php';
+                    }
+                });
+          });
           
        </script>

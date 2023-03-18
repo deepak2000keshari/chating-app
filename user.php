@@ -36,9 +36,11 @@ else
     {
         $query="select * from user where email='".$signup_email."'";
         $result=mysqli_query($conn,$query);
+        $name=explode(' ',$signup_name);
+        $profile='https://ui-avatars.com/api/?name='.$name[0].'+'.$name[1].'&rounded=true';
         if(mysqli_num_rows($result)==0)
         {
-          $query="insert into user (user_name, email, password, phone, dob) values ('$signup_name','$signup_email','$signup_password','$signup_phone','$signup_date')";
+          $query="insert into user (user_name, email, password, phone, dob,profile) values ('$signup_name','$signup_email','$signup_password','$signup_phone','$signup_date','$profile')";
           $result=mysqli_query($conn,$query);
           if($result)
           {

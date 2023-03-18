@@ -1,11 +1,17 @@
 <?php include('css.php'); 
 session_start();
+
 include('conection.php');
 $query='select * from user where id!='.$_SESSION['id'];
 $result=mysqli_query($conn,$query);
-if(isset($_SESSION['username']))
-{
-    
+$query='select * from user where id='.$_GET['id'];
+$user_reciever=mysqli_query($conn,$query);
+$user_reciever=mysqli_fetch_all($user_reciever,MYSQLI_ASSOC);
+$query='SELECT * FROM `user` JOIN msg on (user.id=msg.reciever) or (user.id=msg.sender) WHERE (user.id='.$_GET["id"].' AND msg.sender='.$_SESSION["id"].') or (user.id='.$_SESSION["id"].' AND msg.sender='.$_GET["id"].')';
+$user_chat=mysqli_query($conn,$query);
+$user_chat=mysqli_fetch_all($user_chat,MYSQLI_ASSOC);//revieve and send msg
+date_default_timezone_set("Asia/Kolkata");
+if(isset($_SESSION['username'])){
 ?>
 <style>
 layout,
@@ -667,7 +673,7 @@ html {
 
                                                     <div class="row align-items-center gx-5">
                                                         <div class="col-auto">
-                                                            <div class="avatar avatar-online">
+                                                            <div class="avatar <?php if($_SESSION['status']==1){ echo " avatar-online "; }else{ echo " avatar-offline ";}?>">
 
                                                                 <img class="avatar-img" src="assets/img/avatars/7.jpg"
                                                                     alt="">
@@ -676,8 +682,8 @@ html {
                                                             </div>
                                                         </div>
                                                         <div class="col">
-                                                            <h5>William Wright</h5>
-                                                            <p>online</p>
+                                                            <h5><?php echo $_SESSION['user_name'];?></h5>
+                                                            <p><?php if($_SESSION['status']==1){ echo "online"; }else{ echo "offline"; }?></p>
                                                         </div>
                                                         <div class="col-auto">
                                                             <div class="form-check">
@@ -1346,32 +1352,35 @@ html {
 
                                     <!-- Card -->
                                     <?php foreach(mysqli_fetch_all($result,MYSQLI_ASSOC) as $value){?>
-                                    <a href="massage.chat.php?id=<?php echo $value['id']?>" class="card border-0 text-reset">
+                                    <a href="massage.chat.php?id=<?php echo $value['id']?>"
+                                        class="card border-0 text-reset">
                                         <div class="card-body">
                                             <div class="row gx-5">
                                                 <div class="col-auto">
-                                                    <div class="avatar <?php if($value['status']==1){ echo ' avatar-online'; }else { echo ' avatar-offline';}?>">
+                                                    <div
+                                                        class="avatar <?php if($value['status']==1){ echo ' avatar-online'; }else { echo ' avatar-offline';}?>">
                                                         <img src="<?php echo $value['profile']; ?>" alt="#" class="avatar-img">
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="col">
                                                     <div class="d-flex align-items-center mb-3">
                                                         <h5 class="me-auto mb-0"><?php echo $value['user_name'] ?></h5>
                                                         <span class="text-muted extra-small ms-2">08:45 PM</span>
                                                     </div>
-                                                    
-                                                <div class="d-flex align-items-center">
-                                                    <div class="line-clamp me-auto">
-                                                        <!-- Hello! Yeah, I'm going to meet friend of mine at the departments
-                                                        stores now. -->
-                                                        <span class="text-muted"><?php if($value['status']==1){ echo 'online'; }else { echo 'offline';}?></span>
-                                                    </div>
 
-                                                    <!-- <div class="badge badge-circle bg-primary ms-5">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="line-clamp me-auto">
+                                                            <!-- Hello! Yeah, I'm going to meet friend of mine at the departments
+                                                        stores now. -->
+                                                            <span
+                                                                class="text-muted"><?php if($value['status']==1){ echo 'online'; }else { echo 'offline';}?></span>
+                                                        </div>
+
+                                                        <!-- <div class="badge badge-circle bg-primary ms-5">
                                                         <span>3</span>
                                                     </div> -->
-                                                </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div><!-- .card-body -->
@@ -2651,29 +2660,254 @@ html {
 
         <!-- Chat -->
 
-       
-            <main class="main">
-                <div class="container h-100">
-                    <div class="d-flex flex-column h-100 justify-content-center text-center">
-                        <div class="mb-6">
-                            <span class="icon icon-xl text-muted">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-message-square">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                            </span>
+        <main class="main is-visible" data-dropzone-area="">
+            <div class="container h-100">
+
+                <div class="d-flex flex-column h-100 position-relative">
+                    <!-- Chat: Header -->
+                    <div class="chat-header border-bottom py-4 py-lg-7">
+                        <div class="row align-items-center">
+
+                            <!-- Mobile: close -->
+                            <div class="col-2 d-xl-none">
+                                <a class="icon icon-lg text-muted" href="#" data-toggle-chat="">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="feather feather-chevron-left">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </a>
+                            </div>
+                            <!-- Mobile: close -->
+
+                            <!-- Content -->
+                            <div class="col-8 col-xl-12">
+                                <div class="row align-items-center text-center text-xl-start">
+                                    <!-- Title -->
+                                    <div class="col-12 col-xl-6">
+                                        <div class="row align-items-center gx-5">
+                                            <div class="col-auto">
+                                                <div
+                                                    class="avatar <?php if($user_reciever[0]['status']==1){ echo ' avatar-online ';}else{ echo ' avatar-offline '; }?> d-none d-xl-inline-block">
+                                                    <img class="avatar-img" src="<?php echo $user_reciever[0]['profile']; ?>" alt="">
+                                                </div>
+                                            </div>
+
+                                            <div class="col overflow-hidden">
+                                                <h5 class="text-truncate"><?php echo $user_reciever[0]['user_name']?>
+                                                </h5>
+                                                <p class="text-truncate" id='status'>
+                                                    <?php if($user_reciever[0]['status']==1){ echo "online"; }else{ echo "offline"; }?>
+                                                </p>
+                                                <input type="hidden" id='main_status' value="<?php if($user_reciever[0]['status']==1){ echo 'online'; }else{ echo 'offline'; }?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Title -->
+
+                                    <!-- Toolbar -->
+                                    <div class="col-xl-6 d-none d-xl-block">
+                                        <div class="row align-items-center justify-content-end gx-6">
+                                            <div class="col-auto">
+                                                <a href="#" class="icon icon-lg text-muted" data-bs-toggle="offcanvas"
+                                                    data-bs-target="#offcanvas-more" aria-controls="offcanvas-more">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                        class="feather feather-more-horizontal">
+                                                        <circle cx="12" cy="12" r="1"></circle>
+                                                        <circle cx="19" cy="12" r="1"></circle>
+                                                        <circle cx="5" cy="12" r="1"></circle>
+                                                    </svg>
+                                                </a>
+                                            </div>
+
+                                            <div class="col-auto">
+                                                <div class="avatar-group">
+                                                    <a href="#" class="avatar avatar-sm" data-bs-toggle="modal"
+                                                        data-bs-target="#modal-user-profile">
+                                                        <img class="avatar-img" src="<?php echo $user_reciever[0]['profile']; ?>" alt="#">
+                                                    </a>
+
+                                                    <a href="#" class="avatar avatar-sm" data-bs-toggle="modal"
+                                                        data-bs-target="#modal-profile">
+                                                        <img class="avatar-img" src="<?php echo $_SESSION['profile']; ?>" alt="#">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Toolbar -->
+                                </div>
+                            </div>
+                            <!-- Content -->
+
+                            <!-- Mobile: more -->
+                            <div class="col-2 d-xl-none text-end">
+                                <a href="#" class="icon icon-lg text-muted" data-bs-toggle="offcanvas"
+                                    data-bs-target="#offcanvas-more" aria-controls="offcanvas-more">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="feather feather-more-vertical">
+                                        <circle cx="12" cy="12" r="1"></circle>
+                                        <circle cx="12" cy="5" r="1"></circle>
+                                        <circle cx="12" cy="19" r="1"></circle>
+                                    </svg>
+                                </a>
+                            </div>
+                            <!-- Mobile: more -->
+
                         </div>
-
-                        <p class="text-muted">Pick a person from left menu, <br> and start your conversation.</p>
                     </div>
+                    <!-- Chat: Header -->
 
+                    <!-- Chat: Content -->
+                    <div class="chat-body hide-scrollbar flex-1 h-100">
+                        <div class="chat-body-inner" style="padding-bottom: 87px">
+                            <div id='appender' class="py-6 py-lg-12">
+
+                                <!-- Message -->
+                                <?php $i=0;foreach($user_chat as $value){
+                                    if($i!=0){
+                                    $datep=strtotime($user_chat[$i-1]['datetime']);
+                                    $datec=strtotime($user_chat[$i]['datetime']);
+                                    $date=new DateTime();
+                                    $date_pre=date_format($date->setTimestamp($datep),"D M d");
+                                    $date_cur=date_format($date->setTimestamp($datec),"D M d");
+                                    // echo  date('Y-m-d',$datep)."\n";
+                                    // echo date('Y-m-d',$datec);
+                                    // echo date('Y-m-d',$datep)<date('Y-m-d',$datec);
+
+                                    if(date('Y-m-d',$datep)>date('Y-m-d',$datec))
+                                    {
+                                       $date=$date_pre;
+                                    ?>
+                                      <div class="message-divider">
+                                        <small class="text-muted"><?php echo $date;?></small>
+                                      </div>
+                                    <?php }elseif(date('Y-m-d',$datep)<date('Y-m-d',$datec)){ $date=$date_cur;?>
+                                    <div class="message-divider">
+                                       <small class="text-muted"><?php echo $date;?></small>
+                                    </div>
+                                    <?php }}if($value['sender']!=$_SESSION['id']){ 
+                                    ?>
+                                    <div class="message">
+                                       <div class="message-inner">
+                                         <div class="message-body">
+                                            <div class="message-content">
+                                                <div class="message-text">
+                                                    <p><?php echo $value['msg']?></p>
+                                                </div>
+
+
+                                            </div>
+                                        </div>
+
+                                        <div class="message-footer">
+                                            <span
+                                                class="extra-small text-muted"><?php echo date('g:i A',strtotime($value['datetime']));?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php } else{?>
+                                <!-- Message -->
+                                <div class="message message-out">
+                                    <div class="message-inner">
+                                        <div class="message-body">
+                                            <div class="message-content">
+                                                <div class="message-text">
+                                                    <p><?php echo $value['msg']?></p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="message-footer">
+                                            <span
+                                                class="extra-small text-muted"><?php echo date('h:i A',strtotime($value['datetime']));?></span>
+                                                <?php if($value['seen_status']==1){?>
+                                                    <span class="extra-small text-muted">Seen</span>
+                                                <?php }?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php }?>
+                                <!-- Divider -->
+
+
+                                <?php $i++;}?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </main>
-     
+                <!-- Chat: Content -->
+
+                <!-- Chat: Footer -->
+                <div class="chat-footer pb-3 pb-lg-7 position-absolute bottom-0 start-0">
+                    <!-- Chat: Files -->
+                    <div class="dz-preview bg-dark" id="dz-preview-row" data-horizontal-scroll="">
+                    </div>
+                    <!-- Chat: Files -->
+
+                    <!-- Chat: Form -->
+                    <form id="prospects_form"  onsubmit="return false" class="chat-form rounded-pill bg-dark" data-emoji-form="" method='post'>
+                        <div class="row align-items-center gx-0">
+                            <div class="col-auto">
+                                <a href="javascript:void(0)" class="btn btn-icon btn-link text-body rounded-circle dz-clickable"
+                                    id="dz-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="feather feather-paperclip">
+                                        <path
+                                            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                        </path>
+                                    </svg>
+                                </a>
+                            </div>
+
+                            <div class="col">
+                                <div class="input-group">
+                                    <textarea id='msg' class="form-control px-0" placeholder="Type your message..." rows="1"
+                                        data-emoji-input="" data-autosize="true"
+                                        style="overflow: hidden; overflow-wrap: break-word; resize: none; height: 47px;"></textarea>
+
+                                    <a href="javascript:void(0)" class="input-group-text text-body pe-0" data-emoji-btn="">
+                                        <span class="icon icon-lg">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-smile">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                            </svg>
+                                        </span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="col-auto">
+                                <button  class="btn btn-icon btn-primary rounded-circle ms-5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="feather feather-send">
+                                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <!-- Chat: Form -->
+                </div>
+                <!-- Chat: Footer -->
+            </div>
+
+    </div>
+    </main>
 
 
-        <!-- Chat -->
+    <!-- Chat -->
 
     </div>
     <!-- Layout -->
@@ -2821,6 +3055,7 @@ html {
 
                         <div class="profile-body">
                             <div class="avatar avatar-xl">
+                            
                                 <img class="avatar-img" src="<?php echo $_SESSION['profile'];?>" alt="#">
                             </div>
 
@@ -2996,7 +3231,7 @@ html {
                                 </a>
                             </div>
 
-                            <h4 class="mb-1"><?php echo $_SESSION['username']; ?></h4>
+                            <h4 class="mb-1">William Wright</h4>
                             <p>last seen 5 minutes ago</p>
                         </div>
                     </div>
@@ -3222,7 +3457,178 @@ html {
             </div>
         </div>
     </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script>
+    var conn = new WebSocket('ws://localhost:8080');
+    conn.onopen = function(e) {
+        console.log("Connection established!")
+    };
 
+    conn.onmessage = function(e) {
+        data_msg = JSON.parse(e.data);
+        var uri_sender=<?php echo explode('=',$_SERVER['QUERY_STRING'])[1]; ?>;
+        if(data_msg.reciever_id=="<?php echo $_SESSION['id'];?>"){
+        if(data_msg.status=='send')
+        {
+        var html='<div class="message">'+
+                                    '<div class="message-inner">'+
+                                        '<div class="message-body">'+
+                                            '<div class="message-content">'+
+                                                '<div class="message-text">'+
+                                                    '<p>'+data_msg.msg+'</p>'+
+                                                '</div>'+
+                                            '</div>'+
+                                        '</div>'+
+                                        '<div class="message-footer">'+
+                                        '<span class="extra-small text-muted"><?php echo date('h:i A',strtotime(date("d-m-y h:i:s A")));?></span>'+
+                                        '</div>'+
+                                    '</div>'+
+                                '</div>';
+         $('#appender').append(html);
+         if(uri_sender==data_msg.sender_id)
+         {
+            setTimeout(status_seen(data_msg.msg_id), 3000);
+         }
+        }
+        else
+        {
+            $('#status').html('');
+            var main_status=$('#main_status').val();
+            if(data_msg.status=="is typing")
+            {
+                var data=data_msg.status+'<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
+                $('#status').html('');
+                $('#status').html(data);
+                setTimeout(status, 2000);
+            }
+            else
+            {
+             $('#status').html('');
+             $('#status').html(main_status);
+            }
+        }
+       }
+        // var msg = "<b>" + data.name + "</b>:<span>" + data.msg + "</span></br>";
+        // $('#appender').append(msg);
+        // console.log(data.msg);
+
+    };
+
+    function status()
+    {
+        var main_status=$('#main_status').val();
+        $('#status').html('');
+        $('#status').html(main_status);
+    }
+
+   
+    // $('body').on("#""submit",function (e) {
+    $("#prospects_form").submit(function(e) {
+       e.preventDefault();
+       var msg=$('#msg').val();
+      
+       if(msg!=''){
+         var html='<div class="message message-out">'+
+                                    '<div class="message-inner">'+
+                                        '<div class="message-body">'+
+                                            '<div class="message-content">'+
+                                                '<div class="message-text">'+
+                                                    '<p>'+msg+'</p>'+
+                                                '</div>'+
+                                            '</div>'+
+                                        '</div>'+
+                                        '<div class="message-footer">'+
+                                        '<span class="extra-small text-muted"><?php echo date('h:i A',strtotime(date("d-m-y h:i:s A")));?></span>'+
+                                        '<span class="extra-small text-muted seen"></span>'+
+                                        '</div>'+
+                                    '</div>'+
+                                '</div>'
+        $('#appender').append(html);
+        var send_data={
+                        status:'send',
+                        sender_id:"<?php echo $_SESSION['id']; ?>",
+                        msg:msg,
+                        reciever_id:"<?php echo $user_reciever[0]['id'];?>"
+                      };
+        conn.send(JSON.stringify(send_data));
+        $('#msg').val('');
+                    }
+      });
+      $('#msg').keyup(function(e)
+      {
+        if(e.keyCode == 13)
+        {
+            var msg=$('#msg').val();
+            if(msg!=''){
+                var html='<div class="message message-out">'+
+                                    '<div class="message-inner">'+
+                                        '<div class="message-body">'+
+                                            '<div class="message-content">'+
+                                                '<div class="message-text">'+
+                                                    '<p>'+msg+'</p>'+
+                                                '</div>'+
+                                            '</div>'+
+                                        '</div>'+
+                                        '<div class="message-footer">'+
+                                        '<span class="extra-small text-muted"><?php echo date('h:i A',strtotime(date("d-m-y h:i:s A")));?></span>'+
+                                        '<span class="extra-small text-muted seen"></span>'+
+                                        '</div>'+
+                                    '</div>'+
+                                '</div>'
+
+                              
+                                            
+                                                
+                                                    
+                      
+                $('#appender').append(html);
+                var send_data={
+                        status:'send',
+                        sender_id:"<?php echo $_SESSION['id']; ?>",
+                        msg:msg,
+                        reciever_id:"<?php echo $user_reciever[0]['id'];?>"
+                      };
+                conn.send(JSON.stringify(send_data));
+                $('#msg').val('');
+            }
+        }
+        else
+        {
+            var send_data={
+                        status:'is typing',
+                        sender_id:"<?php echo $_SESSION['id']; ?>",
+                        msg:msg,
+                        reciever_id:"<?php echo $user_reciever[0]['id'];?>"
+                      };
+                conn.send(JSON.stringify(send_data));
+            
+
+        }
+      });
+      function status_seen(id)
+      {
+        $.get("seen.php", {
+                    id: id,
+                },
+                function(data) {              
+                });
+        $('.seen').text(' Seen');
+      }
+      function sound(src) {
+          this.sound = document.createElement("audio");
+          this.sound.src = src;
+          this.sound.setAttribute("preload", "auto");
+          this.sound.setAttribute("controls", "none");
+          this.sound.style.display = "none";
+          this.play = function(){
+          this.sound.play();
+         }
+         this.stop = function(){
+         this.sound.pause();
+         }
+       }
+       sound('button-09a.wav');
+    </script>
     <?php include('footer.php');}
     else
     {

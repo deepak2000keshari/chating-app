@@ -23,4 +23,4 @@
         <!-- Theme mode -->
       
     </head>
-    <body class="bg-light">
+    
