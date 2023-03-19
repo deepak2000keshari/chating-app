@@ -60,6 +60,17 @@
                     }
                 });
           });
+          $('.logout').click(function()
+          {
+            $.get("logout.php", {
+                },
+                function(data) {
+                    if(data==1)
+                    {
+                        window.location.href = 'signin.php';
+                    }
+                });
+          });
           
           
        </script>
